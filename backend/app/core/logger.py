@@ -15,8 +15,12 @@ def setup_logging():
         handlers=[RichHandler(rich_tracebacks=True, markup=True)]
     )
     
-    # Set levels for other loggers
-    logging.getLogger("uvicorn.access").setLevel(logging.INFO)
+    # Set levels for other loggers to reduce noise
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
+    logging.getLogger("aiosqlite").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger("breeze")

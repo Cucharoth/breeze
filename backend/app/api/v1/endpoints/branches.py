@@ -8,7 +8,8 @@ from app.schemas.kg import KGGraphRead
 from app.services.story_service import story_service
 from app.services.memory_pipeline import extract_knowledge
 from app.repositories.kg_repository import kg_repository
-from app.api.dependencies import get_llm_adapter
+from app.api.dependencies import get_llm_service
+from app.services.llm_service import LLMService
 
 router = APIRouter()
 
@@ -18,12 +19,12 @@ async def add_message(
     message_in: MessageCreate,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    llm_adapter = Depends(get_llm_adapter)
+    llm_service: LLMService = Depends(get_llm_service)
 ):
     message = await story_service.add_message(db, branch_id, message_in.role, message_in.content)
     
     # Trigger background knowledge extraction
-    background_tasks.add_task(extract_knowledge, branch_id, message_in.content, llm_adapter)
+    background_tasks.add_task(extract_knowledge, branch_id, message_in.content, llm_service)
     
     return message
 
@@ -46,9 +47,9 @@ async def get_history(
 async def summarize(
     branch_id: int,
     db: AsyncSession = Depends(get_db),
-    llm_adapter = Depends(get_llm_adapter)
+    llm_service: LLMService = Depends(get_llm_service)
 ):
-    summary = await story_service.generate_summary(db, branch_id, llm_adapter)
+    summary = await story_service.generate_summary(db, branch_id, llm_service)
     return {"summary": summary}
 
 @router.get("/{branch_id}/kg/", response_model=KGGraphRead)

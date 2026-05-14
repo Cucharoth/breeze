@@ -1,9 +1,9 @@
 import json
 from app.repositories.kg_repository import kg_repository
-from app.services.llm.base import LLMAdapter
+from app.services.llm_service import LLMService
 from app.core.logger import logger
 
-async def extract_knowledge(branch_id: int, content: str, adapter: LLMAdapter):
+async def extract_knowledge(branch_id: int, content: str, llm_service: LLMService):
     """Asynchronous task to extract entities and relationships."""
     prompt = f"""
     Extract entities (Characters, Locations, Objects, Events) and their relationships from the following text.
@@ -17,7 +17,7 @@ async def extract_knowledge(branch_id: int, content: str, adapter: LLMAdapter):
     
     try:
         from app.core.database import AsyncSessionLocal
-        response_text = await adapter.generate(prompt)
+        response_text = await llm_service.generate_text(prompt)
         # Simple extraction (find the first { and last })
         start = response_text.find("{")
         end = response_text.rfind("}") + 1

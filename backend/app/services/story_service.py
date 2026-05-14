@@ -6,7 +6,7 @@ from app.repositories.message_repository import message_repository
 from app.repositories.checkpoint_repository import checkpoint_repository
 from app.repositories.scenario_repository import scenario_repository
 from app.repositories.summary_repository import summary_repository
-from app.services.llm.base import LLMAdapter
+from app.services.llm_service import LLMService
 from app.models.story import Story
 from app.models.branch import Branch
 from app.models.message import Message
@@ -97,7 +97,7 @@ class StoryService:
         history.sort(key=lambda x: x.created_at)
         return history
 
-    async def generate_summary(self, db: AsyncSession, branch_id: int, adapter: LLMAdapter) -> str:
+    async def generate_summary(self, db: AsyncSession, branch_id: int, llm_service: LLMService) -> str:
         # Get history
         history = await self.get_history(db, branch_id)
         if len(history) < 2:
@@ -107,7 +107,7 @@ class StoryService:
         text_to_summarize = "\n".join([f"{m.role}: {m.content}" for m in history])
         prompt = f"Summarize this roleplay history:\n{text_to_summarize}"
         
-        summary_content = await adapter.generate(prompt)
+        summary_content = await llm_service.generate_text(prompt)
         
         # Save to DB
         await summary_repository.create(db, obj_in_data={
