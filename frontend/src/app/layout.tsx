@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { ThemeProvider } from "@/components/ThemeContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Breeze-RP | Minimalist Branching Narratives",
   description: "A privacy-first, minimalist roleplay interface with branching timelines and hybrid memory.",
 };
+
+import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -13,9 +16,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        <div className="gradient-blob" />
-        {children}
+      <body className="antialiased">
+        <ThemeProvider>
+          {children}
+          <Toaster richColors position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   );

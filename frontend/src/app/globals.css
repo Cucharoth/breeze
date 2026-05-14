@@ -1,36 +1,86 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #050505;
-  --color-surface: #121212;
-  --color-primary: #3b82f6;
-  --color-primary-glow: rgba(59, 130, 246, 0.5);
-  
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #a0a0a0;
-  
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-blur: 12px;
+  /* Semantic Tokens mapping to CSS Variables */
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-primary: var(--primary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border-glow: var(--border-glow);
   
   --font-sans: 'Outfit', sans-serif;
+  --font-serif: var(--font-family), serif;
   --font-mono: 'JetBrains Mono', monospace;
   
   --animate-fade-in: fadeIn 0.6s ease forwards;
-  
+  --animate-fire-ember: fireEmber linear infinite;
+
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
+  @keyframes fireEmber {
+    0% { transform: translateY(0) translateX(0) scale(1); opacity: 1; }
+    50% { transform: translateY(-300px) translateX(20px) scale(0.5); opacity: 0.5; }
+    100% { transform: translateY(-600px) translateX(-20px) scale(0); opacity: 0; }
+  }
+}
+
+:root {
+  /* DEFAULT: Obsidian Manuscript */
+  --bg: #080808;
+  --surface: #161616;
+  --primary: #d97706;
+  --text-primary: rgba(217, 119, 6, 0.9);
+  --text-secondary: #92400e;
+  --border-glow: rgba(217, 119, 6, 0.05);
+  --ink-glow: rgba(217, 119, 6, 0.2);
+  --glass-blur: 0px;
+  --glass-border: #1a1a1a;
+  --font-family: 'PT Serif';
+  
+  --surface-padding: 4rem;
+  --surface-radius: 2px;
+  --surface-border-top: 40px;
+}
+
+[data-theme='glass'] {
+  --bg: #050505;
+  --surface: rgba(255, 255, 255, 0.03);
+  --primary: #3b82f6;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --border-glow: rgba(59, 130, 246, 0.3);
+  --glass-blur: 12px;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --font-family: 'Outfit';
+  --surface-radius: 24px;
+  --surface-border-top: 1px;
+}
+
+[data-theme='tavern'] {
+  --bg: #0d110f;
+  --surface: #1a231e;
+  --primary: #8b4513;
+  --text-primary: #d1d5db;
+  --text-secondary: #4a5d50;
+  --border-glow: #2e3d33;
+  --glass-blur: 0px;
+  --glass-border: #2e3d33;
+  --font-family: 'PT Serif';
+  --surface-radius: 4px;
 }
 
 @layer base {
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500&display=swap');
 
   body {
-    @apply bg-background text-text-primary font-sans antialiased;
+    @apply bg-background text-text-primary font-serif antialiased;
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background-color 0.8s ease, color 0.8s ease;
   }
 }
 
@@ -39,31 +89,77 @@
     @apply max-w-[1200px] mx-auto px-5 py-10;
   }
 
-  .glass-panel {
-    background: var(--glass-bg);
+  /* --- SEMANTIC BREEZE COMPONENTS --- */
+
+  .breeze-surface {
+    position: relative;
+    background: var(--surface);
     backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    @apply border border-[var(--glass-border)] rounded-[20px] p-8 transition-all duration-400;
+    border: 1px solid var(--glass-border);
+    border-top: var(--surface-border-top) solid var(--glass-border);
+    border-radius: var(--surface-radius);
+    padding: var(--surface-padding);
+    @apply shadow-2xl transition-all duration-500;
   }
 
-  .glass-panel:hover {
-    @apply border-primary/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)];
+  /* Theme-Specific Decorations via Pseudo-Elements */
+  [data-theme='obsidian'] .breeze-surface::before,
+  [data-theme='obsidian'] .breeze-surface::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    z-index: -1;
+    background: #121212;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 2px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    @apply transition-transform duration-700;
   }
 
-  .input-glass {
-    @apply bg-white/4 border border-[var(--glass-border)] rounded-xl text-text-primary px-[18px] py-[14px] text-base transition-all duration-300 w-full;
-    @apply focus:outline-none focus:border-primary focus:bg-white/8 focus:ring-4 focus:ring-primary/10;
+  [data-theme='obsidian'] .breeze-surface::before {
+    transform: rotate(-1.5deg) scale(1.02);
+    opacity: 0.5;
   }
 
-  .btn-primary {
-    @apply bg-primary text-white rounded-xl px-7 py-3.5 font-semibold text-base cursor-pointer transition-all duration-300 flex items-center gap-2.5;
-    @apply hover:translate-y-[-2px] hover:shadow-[0_10px_20px_-10px_var(--color-primary)] hover:brightness-110;
-    @apply active:translate-y-0;
+  [data-theme='obsidian'] .breeze-surface::after {
+    transform: rotate(1deg) scale(1.01);
   }
 
-  .gradient-blob {
-    @apply fixed w-[600px] h-[600px] z-[-1] top-[-200px] right-[-200px] pointer-events-none;
-    background: radial-gradient(circle, var(--color-primary-glow) 0%, transparent 70%);
-    filter: blur(80px);
+  [data-theme='obsidian'] .breeze-surface {
+    background-image: url("https://www.transparenttextures.com/patterns/noise-lines.png");
+    background-blend-mode: overlay;
+    background-opacity: 0.03;
+  }
+
+  /* Universal Input */
+  .breeze-input {
+    @apply bg-transparent border-none text-text-primary px-0 py-2 transition-all duration-300 w-full outline-none;
+    @apply text-2xl font-light italic;
+    background-size: 100% 40px;
+  }
+
+  [data-theme='obsidian'] .breeze-input {
+    text-shadow: 0 0 10px var(--ink-glow);
+    background-image: linear-gradient(transparent, transparent 39px, var(--border-glow) 39px, var(--border-glow) 40px);
+  }
+
+  [data-theme='glass'] .breeze-input {
+    @apply border-b border-white/10 italic text-xl;
+    background-image: none;
+  }
+
+  /* Universal Primary Button */
+  .breeze-btn-primary {
+    @apply relative flex items-center justify-center font-bold transition-all duration-300 cursor-pointer overflow-hidden;
+  }
+
+  [data-theme='obsidian'] .breeze-btn-primary {
+    @apply bg-primary text-black rounded-full w-20 h-20 text-2xl font-black shadow-xl;
+    @apply hover:scale-110 hover:shadow-[0_0_40px_var(--color-primary)] active:scale-95;
+  }
+
+  [data-theme='glass'] .breeze-btn-primary {
+    @apply bg-primary/10 border border-primary/20 text-primary px-10 py-4 rounded-full w-full max-w-xs;
+    @apply hover:bg-primary/20 hover:border-primary/40;
   }
 }
