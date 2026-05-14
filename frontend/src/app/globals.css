@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #050505;
+  --color-surface: #121212;
+  --color-primary: #3b82f6;
+  --color-primary-glow: rgba(59, 130, 246, 0.5);
+  
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a0a0a0;
+  
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 12px;
+  
+  --font-sans: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  --animate-fade-in: fadeIn 0.6s ease forwards;
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@layer base {
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  body {
+    @apply bg-background text-text-primary font-sans antialiased;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  .main-container {
+    @apply max-w-[1200px] mx-auto px-5 py-10;
+  }
+
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    @apply border border-[var(--glass-border)] rounded-[20px] p-8 transition-all duration-400;
+  }
+
+  .glass-panel:hover {
+    @apply border-primary/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)];
+  }
+
+  .input-glass {
+    @apply bg-white/4 border border-[var(--glass-border)] rounded-xl text-text-primary px-[18px] py-[14px] text-base transition-all duration-300 w-full;
+    @apply focus:outline-none focus:border-primary focus:bg-white/8 focus:ring-4 focus:ring-primary/10;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white rounded-xl px-7 py-3.5 font-semibold text-base cursor-pointer transition-all duration-300 flex items-center gap-2.5;
+    @apply hover:translate-y-[-2px] hover:shadow-[0_10px_20px_-10px_var(--color-primary)] hover:brightness-110;
+    @apply active:translate-y-0;
+  }
+
+  .gradient-blob {
+    @apply fixed w-[600px] h-[600px] z-[-1] top-[-200px] right-[-200px] pointer-events-none;
+    background: radial-gradient(circle, var(--color-primary-glow) 0%, transparent 70%);
+    filter: blur(80px);
+  }
+}
