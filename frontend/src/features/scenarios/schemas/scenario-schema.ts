@@ -7,7 +7,7 @@ export const ScenarioCreateSchema = z.object({
 export type ScenarioCreate = z.infer<typeof ScenarioCreateSchema>;
 
 export const ScenarioSchema = ScenarioCreateSchema.extend({
-  id: z.number(),
+  id: z.string(),
   world_lore: z.string(),
   first_scene: z.string(),
   character_profiles: z.array(z.any()),
