@@ -18,6 +18,10 @@ class LLMService:
     async def generate_json(self, prompt: str, system_prompt: Optional[str] = None) -> Dict[str, Any]:
         return await self.provider.generate_json(prompt, system_prompt=system_prompt)
 
+    async def generate_stream(self, prompt: str, system_prompt: Optional[str] = None) -> Any:
+        async for token in self.provider.generate_stream(prompt, system_prompt=system_prompt):
+            yield token
+
     async def generate_scenario(self, premise: str) -> Dict[str, Any]:
         """Specific orchestration for creating a new world scenario."""
         system_prompt = (

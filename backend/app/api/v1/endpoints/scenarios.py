@@ -19,3 +19,29 @@ async def create_scenario(
 ):
     logger.info(f"Igniting reality with premise: {scenario_in.premise[:50]}...")
     return await scenario_service.create_scenario(db, scenario_in, llm_service)
+
+@router.get("/{scenario_id}", response_model=ScenarioRead)
+async def get_scenario(
+    scenario_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    from app.repositories.scenario_repository import scenario_repository
+    scenario = await scenario_repository.get(db, scenario_id)
+    if not scenario:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Scenario not found")
+    return scenario
+
+@router.patch("/{scenario_id}", response_model=ScenarioRead)
+async def update_scenario(
+    scenario_id: str,
+    scenario_update: dict, # Simplified for now
+    db: AsyncSession = Depends(get_db)
+):
+    from app.repositories.scenario_repository import scenario_repository
+    scenario = await scenario_repository.get(db, scenario_id)
+    if not scenario:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Scenario not found")
+    
+    return await scenario_repository.update(db, db_obj=scenario, obj_in=scenario_update)

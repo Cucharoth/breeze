@@ -1,22 +1,17 @@
-from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+import uuid
+from sqlalchemy import String, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
-from typing import Optional, List, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from app.models.story import Story
-    from app.models.message import Message
-    from app.models.checkpoint import Checkpoint
+from typing import Optional
 
 class Branch(Base):
     __tablename__ = "branches"
     
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    story_id: Mapped[int] = mapped_column(ForeignKey("stories.id"))
-    parent_checkpoint_id: Mapped[Optional[int]] = mapped_column(ForeignKey("checkpoints.id"), nullable=True)
-    name: Mapped[str] = mapped_column(String(100), default="Main Branch")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    story_id: Mapped[str] = mapped_column(String(36), ForeignKey("stories.id"))
+    parent_checkpoint_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("checkpoints.id"), nullable=True)
+    name: Mapped[str] = mapped_column(String(100))
     
-    # Relationships
-    story: Mapped["Story"] = relationship("Story", back_populates="branches")
-    messages: Mapped[List["Message"]] = relationship("Message", back_populates="branch")
-    checkpoints: Mapped[List["Checkpoint"]] = relationship("Checkpoint", foreign_keys="[Checkpoint.branch_id]", back_populates="branch")
+    # Directives for steering the LLM
+    short_term_directive: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    long_term_directive: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)

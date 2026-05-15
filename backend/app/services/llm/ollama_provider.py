@@ -59,3 +59,38 @@ class OllamaProvider:
         except json.JSONDecodeError as e:
             logger.error(f"Failed to decode Ollama JSON response: {response_text}")
             raise ValueError(f"Invalid JSON from LLM: {str(e)}")
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        **kwargs: Any
+    ) -> Any: # AsyncIterator[str]
+        url = f"{self.base_url}/api/generate"
+        
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "stream": True,
+            **kwargs
+        }
+        if system_prompt:
+            payload["system"] = system_prompt
+
+        logger.debug(f"Ollama Stream: Starting request to {url}")
+        
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with client.stream("POST", url, json=payload) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                        token = data.get("response", "")
+                        if token:
+                            yield token
+                        if data.get("done"):
+                            break
+                    except json.JSONDecodeError:
+                        continue

@@ -6,7 +6,7 @@ settings = get_settings()
 
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=not settings.IS_PROD,
+    echo=False,
     future=True
 )
 

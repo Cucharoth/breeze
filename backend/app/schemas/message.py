@@ -10,6 +10,6 @@ class MessageCreate(MessageBase):
 
 class MessageRead(MessageBase):
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    branch_id: int
+    id: str
+    branch_id: str
     created_at: datetime

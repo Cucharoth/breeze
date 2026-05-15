@@ -3,18 +3,18 @@ from typing import List, Optional
 
 class KGNodeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    branch_id: int
+    id: str
+    branch_id: str
     name: str
     type: str
     description: Optional[str] = None
 
 class KGEdgeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
-    branch_id: int
-    source_node_id: int
-    target_node_id: int
+    id: str
+    branch_id: str
+    source_node_id: str
+    target_node_id: str
     relationship: str
 
 class KGGraphRead(BaseModel):

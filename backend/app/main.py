@@ -14,11 +14,9 @@ async def lifespan(app: FastAPI):
     setup_logging()
     logger.info(f"Starting {settings.PROJECT_NAME} backend...")
     
-    # Create tables
-    async with engine.begin() as conn:
-        # In a real app, use Migrations (Alembic)
-        # But for this minimalist setup, we'll create them on startup
-        await conn.run_sync(Base.metadata.create_all)
+    # Database setup
+    # Note: Schema is managed via Alembic migrations.
+    # Run: uv run alembic upgrade head
     
     yield
     

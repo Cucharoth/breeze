@@ -24,3 +24,12 @@ class LLMProvider(Protocol):
     ) -> Dict[str, Any]:
         """Generate a structured JSON response."""
         ...
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        **kwargs: Any
+    ) -> Any: # AsyncIterator[str]
+        """Generate a streaming text response."""
+        ...

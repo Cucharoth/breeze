@@ -25,3 +25,12 @@ class BaseRepository(Generic[ModelType]):
         await db.flush()
         await db.refresh(db_obj)
         return db_obj
+
+    async def update(self, db: AsyncSession, *, db_obj: ModelType, obj_in: dict) -> ModelType:
+        for field in obj_in:
+            if hasattr(db_obj, field):
+                setattr(db_obj, field, obj_in[field])
+        db.add(db_obj)
+        await db.flush()
+        await db.refresh(db_obj)
+        return db_obj
