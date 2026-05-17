@@ -94,3 +94,48 @@ class OllamaProvider:
                             break
                     except json.JSONDecodeError:
                         continue
+
+    @property
+    def provider_name(self) -> str:
+        return "ollama"
+
+    async def generate_chat_stream(
+        self,
+        messages: List[Dict[str, str]],
+        system_prompt: Optional[str] = None,
+        **kwargs: Any
+    ) -> Any: # AsyncIterator[str]
+        url = f"{self.base_url}/api/chat"
+        
+        chat_messages = []
+        if system_prompt:
+            chat_messages.append({"role": "system", "content": system_prompt})
+            
+        chat_messages.extend(messages)
+        
+        payload = {
+            "model": self.model,
+            "messages": chat_messages,
+            "stream": True,
+            **kwargs
+        }
+
+        logger.debug(f"Ollama Stream: Starting chat request to {url}")
+        
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with client.stream("POST", url, json=payload) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                        if "message" in data and "content" in data["message"]:
+                            token = data["message"]["content"]
+                            if token:
+                                yield token
+                        if data.get("done"):
+                            break
+                    except json.JSONDecodeError:
+                        continue
+

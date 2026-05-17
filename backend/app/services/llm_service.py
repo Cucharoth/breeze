@@ -13,6 +13,10 @@ class LLMService:
     def __init__(self, provider: LLMProvider):
         self.provider = provider
 
+    @property
+    def provider_name(self) -> str:
+        return self.provider.provider_name
+
     async def generate_text(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         return await self.provider.generate(prompt, system_prompt=system_prompt)
 
@@ -21,6 +25,10 @@ class LLMService:
 
     async def generate_stream(self, prompt: str, system_prompt: Optional[str] = None) -> Any:
         async for token in self.provider.generate_stream(prompt, system_prompt=system_prompt):
+            yield token
+
+    async def generate_chat_stream(self, messages: List[Dict[str, str]], system_prompt: Optional[str] = None) -> Any:
+        async for token in self.provider.generate_chat_stream(messages, system_prompt=system_prompt):
             yield token
 
     async def generate_scenario(self, premise: str) -> Dict[str, Any]:

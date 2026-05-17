@@ -6,6 +6,11 @@ class LLMProvider(Protocol):
     Using Protocol (Structural Typing) allows for flexible implementations
     without rigid inheritance.
     """
+    @property
+    def provider_name(self) -> str:
+        """Name of the provider (e.g., 'gemini', 'ollama')."""
+        ...
+
     async def generate(
         self, 
         prompt: str, 
@@ -31,5 +36,14 @@ class LLMProvider(Protocol):
         system_prompt: Optional[str] = None,
         **kwargs: Any
     ) -> Any: # AsyncIterator[str]
-        """Generate a streaming text response."""
+        """Generate a streaming text response from a simple prompt."""
+        ...
+
+    async def generate_chat_stream(
+        self,
+        messages: List[Dict[str, str]],
+        system_prompt: Optional[str] = None,
+        **kwargs: Any
+    ) -> Any: # AsyncIterator[str]
+        """Generate a streaming text response from a structured chat history."""
         ...
