@@ -224,3 +224,4 @@ data/
 *.db
 *.sqlite
 *.sqlite-journal
+debug/

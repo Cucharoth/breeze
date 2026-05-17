@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 from app.services.llm.interface import LLMProvider
 from app.core.logger import logger
+from app.core.prompt_manager import get_prompt, format_prompt
 
 class LLMService:
     """
@@ -24,24 +25,11 @@ class LLMService:
 
     async def generate_scenario(self, premise: str) -> Dict[str, Any]:
         """Specific orchestration for creating a new world scenario."""
-        system_prompt = (
-            "You are an expert world-builder and roleplay narrator. "
-            "Given a premise, generate a rich world lore, a compelling first scene, "
-            "and a list of key characters. Output must be strictly valid JSON."
-        )
-        
-        prompt = f"""
-        Generate a scenario based on this premise: {premise}
-        
-        Return a JSON object with:
-        - world_lore: (string) Deep background and setting details.
-        - first_scene: (string) The opening scene written in the 2nd person ('You...').
-        - character_profiles: (list of objects) Each with 'name' and 'description'.
-        """
+        system_prompt = get_prompt("scenario_generator")
+        prompt = format_prompt("scenario_premise", premise=premise)
         
         try:
             return await self.provider.generate_json(prompt, system_prompt=system_prompt)
         except Exception as e:
             logger.error(f"Scenario generation failed: {str(e)}")
-            # Return a graceful fallback or re-raise
             raise

@@ -2,18 +2,11 @@ import json
 from app.repositories.kg_repository import kg_repository
 from app.services.llm_service import LLMService
 from app.core.logger import logger
+from app.core.prompt_manager import format_prompt
 
-async def extract_knowledge(branch_id: int, content: str, llm_service: LLMService):
+async def extract_knowledge(branch_id: str, content: str, llm_service: LLMService):
     """Asynchronous task to extract entities and relationships."""
-    prompt = f"""
-    Extract entities (Characters, Locations, Objects, Events) and their relationships from the following text.
-    Return ONLY a JSON object with this format:
-    {{
-        "entities": [{{ "name": "...", "type": "...", "description": "..." }}],
-        "relationships": [{{ "source": "...", "target": "...", "relationship": "..." }}]
-    }}
-    Text: {content}
-    """
+    prompt = format_prompt("knowledge_extractor", content=content)
     
     try:
         from app.core.database import AsyncSessionLocal

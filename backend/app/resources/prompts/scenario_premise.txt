@@ -1,0 +1,6 @@
+Generate a scenario based on this premise: {premise}
+
+Return a JSON object with:
+- world_lore: (string) Deep background and setting details.
+- first_scene: (string) The opening scene written in the 2nd person ('You...').
+- character_profiles: (list of objects) Each with 'name' and 'description'.

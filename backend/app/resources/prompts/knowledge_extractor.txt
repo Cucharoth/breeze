@@ -1,0 +1,7 @@
+Extract entities (Characters, Locations, Objects, Events) and their relationships from the following text.
+Return ONLY a JSON object with this format:
+{{
+    "entities": [{{ "name": "...", "type": "...", "description": "..." }}],
+    "relationships": [{{ "source": "...", "target": "...", "relationship": "..." }}]
+}}
+Text: {content}

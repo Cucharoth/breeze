@@ -8,6 +8,8 @@ import { logger } from '@/lib/logger';
 
 import { useScenario } from '@/features/scenarios/contexts/ScenarioContext';
 
+import { messageApi } from '../api/message-api';
+
 interface ChatProps {
   branchId: string;
   initialHistory: MessageRead[];
@@ -24,6 +26,17 @@ export default function Chat({ branchId, initialHistory }: ChatProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleDelete = async (messageId: string) => {
+    if (isStreaming) return;
+    try {
+      await messageApi.delete(messageId);
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      toast.info('The moment has been banished.');
+    } catch (err) {
+      toast.error('Failed to alter the past.');
+    }
+  };
 
   // Keep activeActor in sync with available actors from Context
   useEffect(() => {
@@ -68,7 +81,8 @@ export default function Chat({ branchId, initialHistory }: ChatProps) {
       
       // 2. Trigger a fresh generation
       setStreamingContent('');
-      await branchApi.streamNext(branchId, (token) => {
+      const speaker = isGmMode ? 'Narrator' : activeActor;
+      await branchApi.streamNext(branchId, speaker, (token) => {
         setStreamingContent(prev => prev + token);
       });
       
@@ -105,7 +119,14 @@ export default function Chat({ branchId, initialHistory }: ChatProps) {
       setIsStreaming(true);
       setStreamingContent('');
       
-      await branchApi.streamNext(branchId, (token) => {
+      // Persist to DB before streaming
+      await branchApi.addMessage(branchId, {
+        role: userMessage.role,
+        content: userMessage.content
+      });
+      
+      const speaker = isGmMode ? 'Narrator' : activeActor;
+      await branchApi.streamNext(branchId, speaker, (token) => {
         setStreamingContent(prev => prev + token);
       });
       
@@ -126,25 +147,58 @@ export default function Chat({ branchId, initialHistory }: ChatProps) {
       {/* Scrollable Messages Area */}
       <div className="flex-1 overflow-y-auto p-8 space-y-12 scrollbar-hide">
         <div className="max-w-3xl mx-auto space-y-12 pb-32">
-          {messages.map((msg) => (
-            <div key={msg.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {messages.map((msg, idx) => (
+            <div key={msg.id} className="group animate-in fade-in slide-in-from-bottom-4 duration-700">
               {msg.role === 'system' ? (
                 <div className="relative py-8 px-12 border-y border-stone-800/30 bg-stone-900/10 italic text-stone-400 text-center font-serif leading-relaxed">
                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-stone-950 px-4">
                       <span className="h-1 w-1 rounded-full bg-stone-800 inline-block mb-1" />
                    </div>
                    {msg.content}
+                   {idx === messages.length - 1 && !isStreaming && (
+                      <button 
+                        onClick={() => handleDelete(msg.id)}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all text-[9px] text-stone-700 hover:text-red-900 uppercase font-bold tracking-widest px-1"
+                        title="Banish this moment"
+                      >
+                        Banish
+                      </button>
+                   )}
                 </div>
               ) : (
                 <div className="flex items-start gap-4">
                   <div className={`mt-1.5 h-1.5 w-1.5 rounded-full ${msg.role === 'user' ? 'bg-stone-600' : 'bg-amber-600'}`} />
                   <div className="flex-1">
-                     <p className={`text-[10px] uppercase tracking-[0.2em] mb-2 font-bold ${msg.role === 'user' ? 'text-stone-600' : 'text-amber-700/80'}`}>
-                       {msg.content.includes(': ') ? msg.content.split(': ')[0] : (msg.role === 'user' ? 'You' : 'Narrator')}
-                     </p>
-                     <div className="text-stone-300 leading-relaxed font-serif text-lg whitespace-pre-wrap">
-                       {msg.content.includes(': ') ? msg.content.split(': ').slice(1).join(': ') : msg.content}
-                     </div>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className={`text-[10px] uppercase tracking-[0.2em] font-bold ${msg.role === 'user' ? 'text-stone-600' : 'text-amber-700/80'}`}>
+                          {(() => {
+                            const firstColonIndex = msg.content.indexOf(': ');
+                            // Only treat as a label if the colon is near the start (under 30 chars)
+                            if (firstColonIndex !== -1 && firstColonIndex < 30) {
+                              return msg.content.substring(0, firstColonIndex);
+                            }
+                            return msg.role === 'user' ? 'You' : 'Narrator';
+                          })()}
+                        </p>
+                        {idx === messages.length - 1 && !isStreaming && (
+                          <button 
+                            onClick={() => handleDelete(msg.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-all text-[9px] text-stone-700 hover:text-red-900 uppercase font-bold tracking-widest px-2 py-0.5 border border-stone-900 rounded"
+                            title="Banish this moment"
+                          >
+                            Banish
+                          </button>
+                        )}
+                      </div>
+                      <div className="text-stone-300 leading-relaxed font-serif text-lg whitespace-pre-wrap">
+                        {(() => {
+                          const firstColonIndex = msg.content.indexOf(': ');
+                          if (firstColonIndex !== -1 && firstColonIndex < 30) {
+                            return msg.content.substring(firstColonIndex + 2);
+                          }
+                          return msg.content;
+                        })()}
+                      </div>
                   </div>
                 </div>
               )}

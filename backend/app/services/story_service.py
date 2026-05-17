@@ -12,6 +12,9 @@ from app.models.branch import Branch
 from app.models.message import Message
 from app.models.checkpoint import Checkpoint
 from typing import List
+import asyncio
+from app.core.debug_logger import log_llm_interaction
+from app.core.prompt_manager import get_prompt
 
 class StoryService:
     async def create_story(self, db: AsyncSession, scenario_id: str) -> Story:
@@ -113,7 +116,7 @@ class StoryService:
         
         return summary_content
 
-    async def generate_next_stream(self, db: AsyncSession, branch_id: str, llm_service: LLMService):
+    async def generate_next_stream(self, db: AsyncSession, branch_id: str, llm_service: LLMService, player_character: str = "the player"):
         """
         Generates the next GM message for a branch, streaming tokens.
         Includes branch-specific directives and history.
@@ -130,15 +133,24 @@ class StoryService:
         history = await self.get_history(db, branch_id)
         
         # 3. Build System Prompt
-        system_prompt = (
-            "You are an expert Game Master for a deep, reactive roleplay experience. "
-            "Write in the 2nd person ('You...') and focus on sensory details and consequences. "
-            "Keep your responses concise and punchy—aim for 1 short paragraph, never exceed 15 words. "
-            "Never speak for the player character."
-        )
+        raw_system_prompt = get_prompt("game_master")
+        
+        if player_character == "Narrator":
+            # Special logic for Co-GM mode
+            system_prompt = raw_system_prompt.replace(
+                "Your role is to describe the world, the environment, and the actions/dialogue of all characters EXCEPT the player character: {player_character}.",
+                "The player is currently acting as the Narrator. Your role is to complement their world-building and describe the reactions of NPCs to their manual intervention."
+            )
+        else:
+            system_prompt = raw_system_prompt.format(player_character=player_character)
         
         if scenario:
             system_prompt += f"\n\nWorld Lore:\n{scenario.world_lore}"
+            
+            profiles = scenario.character_profiles or []
+            if profiles:
+                profiles_text = "\n".join([f"- {c.get('name')}: {c.get('description')}" for c in profiles])
+                system_prompt += f"\n\nCharacter Profiles:\n{profiles_text}"
             
         if branch.long_term_directive:
             system_prompt += f"\n\nLong-term Objective: {branch.long_term_directive}"
@@ -149,9 +161,17 @@ class StoryService:
         # 4. Build Conversation Prompt
         prompt = ""
         for msg in history:
-            role_label = "Narrator" if msg.role == "system" else msg.role.capitalize()
-            prompt += f"{role_label}: {msg.content}\n\n"
+            content = msg.content
+            # Ensure Narrator prefix for assistant messages if not present
+            if msg.role == "assistant" and not content.startswith("Narrator:"):
+                content = f"Narrator: {content}"
             
+            prompt += f"{content}\n\n"
+            
+        prompt = prompt.strip()
+        
+        # 5. Add constraints and Narrator: trigger
+        prompt += "\n\n(STRICT LIMIT: One short paragraph. 3-4 sentences max. Reactive only. Do not resolve the player's action. No summary.)\n\n"
         prompt += "Narrator:"
 
         # 5. Stream and Collect
@@ -162,7 +182,20 @@ class StoryService:
             
         # 6. Persist response after stream is complete
         if full_content.strip():
-            await self.add_message(db, branch_id, "assistant", full_content.strip())
+            # Log the interaction for debugging (async/background)
+            asyncio.create_task(log_llm_interaction(
+                branch_id=branch_id,
+                system_prompt=system_prompt,
+                prompt=prompt,
+                response=full_content.strip()
+            ))
+            
+            # Ensure the Narrator prefix is present for the UI to parse correctly
+            final_content = full_content.strip()
+            if not final_content.startswith("Narrator:"):
+                final_content = f"Narrator: {final_content}"
+                
+            await self.add_message(db, branch_id, "assistant", final_content)
 
     async def get_story_tree(self, db: AsyncSession, story_id: str):
         """
@@ -182,6 +215,20 @@ class StoryService:
             "branches": branches,
             "checkpoints": checkpoints
         }
+
+    async def delete_message(self, db: AsyncSession, message_id: str) -> bool:
+        """
+        Deletes a specific message by ID.
+        """
+        query = select(Message).where(Message.id == message_id)
+        result = await db.execute(query)
+        message = result.scalar_one_or_none()
+        
+        if message:
+            await db.delete(message)
+            await db.commit()
+            return True
+        return False
 
     async def delete_last_message(self, db: AsyncSession, branch_id: str) -> bool:
         """

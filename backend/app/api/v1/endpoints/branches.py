@@ -11,6 +11,7 @@ from app.services.memory_pipeline import extract_knowledge
 from app.repositories.kg_repository import kg_repository
 from app.api.dependencies import get_llm_service
 from app.services.llm_service import LLMService
+from app.schemas.narrative import NextMessageRequest
 
 router = APIRouter()
 
@@ -65,6 +66,7 @@ async def get_kg(
 @router.post("/{branch_id}/stream-next")
 async def stream_next(
     branch_id: str,
+    request_in: NextMessageRequest,
     db: AsyncSession = Depends(get_db),
     llm_service: LLMService = Depends(get_llm_service)
 ):
@@ -72,7 +74,7 @@ async def stream_next(
     Streams the next message from the GM for the given branch.
     """
     return StreamingResponse(
-        story_service.generate_next_stream(db, branch_id, llm_service),
+        story_service.generate_next_stream(db, branch_id, llm_service, player_character=request_in.speaker),
         media_type="text/event-stream"
     )
 

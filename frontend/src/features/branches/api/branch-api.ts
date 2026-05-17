@@ -10,13 +10,19 @@ export const branchApi = {
     return z.array(MessageReadSchema).parse(response.data);
   },
 
+  addMessage: async (branchId: string, message: { role: string, content: string }): Promise<MessageRead> => {
+    const response = await api.post(`/branches/${branchId}/messages/`, message);
+    return MessageReadSchema.parse(response.data);
+  },
+
   // Streaming endpoint using native fetch
-  streamNext: async (branchId: string, onToken: (token: string) => void): Promise<void> => {
+  streamNext: async (branchId: string, speaker: string, onToken: (token: string) => void): Promise<void> => {
     const response = await fetch(`${BASE_URL}/branches/${branchId}/stream-next`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ speaker })
     });
 
     if (!response.ok) throw new Error('Streaming failed');
