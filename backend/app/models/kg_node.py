@@ -11,3 +11,4 @@ class KGNode(Base):
     name: Mapped[str] = mapped_column(String(100), index=True)
     type: Mapped[str] = mapped_column(String(50)) # character, location, item, event
     description: Mapped[str] = mapped_column(Text)
+    embedding: Mapped[str] = mapped_column(Text, nullable=True)

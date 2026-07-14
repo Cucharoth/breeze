@@ -24,10 +24,6 @@ async def add_message(
     llm_service: LLMService = Depends(get_llm_service)
 ):
     message = await story_service.add_message(db, branch_id, message_in.role, message_in.content)
-    
-    # Trigger background knowledge extraction
-    background_tasks.add_task(extract_knowledge, branch_id, message_in.content, llm_service)
-    
     return message
 
 @router.post("/{branch_id}/checkpoints/", response_model=CheckpointRead, status_code=status.HTTP_201_CREATED)

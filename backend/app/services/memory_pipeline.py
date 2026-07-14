@@ -4,36 +4,53 @@ from app.services.llm_service import LLMService
 from app.core.logger import logger
 from app.core.prompt_manager import format_prompt
 
-async def extract_knowledge(branch_id: str, content: str, llm_service: LLMService):
-    """Asynchronous task to extract entities and relationships."""
+from typing import List
+from app.models.message import Message
+
+async def extract_knowledge(branch_id: str, messages: List[Message], llm_service: LLMService):
+    """Asynchronous task to extract entities and relationships from a batch of messages."""
+    logger.info(f"Starting knowledge extraction for branch {branch_id} (batch size: {len(messages)})...")
+    
+    # Format the batch of messages into a single text block
+    content = "\n".join([f"{m.role}: {m.content}" for m in messages])
     prompt = format_prompt("knowledge_extractor", content=content)
     
     try:
         from app.core.database import AsyncSessionLocal
-        response_text = await llm_service.generate_text(prompt)
-        # Simple extraction (find the first { and last })
-        start = response_text.find("{")
-        end = response_text.rfind("}") + 1
-        if start == -1 or end == 0:
-            logger.warning("No valid JSON found in LLM extraction response")
-            return
-
-        data = json.loads(response_text[start:end])
+        from app.services.kg_service import kg_service
         
+        # Use generate_json to ensure valid extraction
+        data = await llm_service.generate_json(prompt)
+        if not data:
+            logger.warning("Empty JSON returned from LLM extraction")
+            return
+            
         async with AsyncSessionLocal() as db:
             for entity in data.get("entities", []):
-                await kg_repository.add_node(
+                name = entity.get("name")
+                if not name:
+                    continue
+                    
+                node_type = entity.get("type", "unknown")
+                description = entity.get("description", "")
+                
+                # Generate embedding
+                emb_text = f"{name} ({node_type}): {description}"
+                embedding_vector = await kg_service.generate_embedding(emb_text)
+                
+                node = await kg_repository.add_node(
                     db, 
                     branch_id=branch_id, 
-                    name=entity["name"], 
-                    node_type=entity["type"], 
-                    description=entity.get("description")
+                    name=name, 
+                    node_type=node_type, 
+                    description=description
                 )
-            
-            # (Future: Handle relationships mapping names to node IDs)
+                
+                if embedding_vector:
+                    node.embedding = json.dumps(embedding_vector)
             
             await db.commit()
-            logger.info(f"Knowledge extraction complete for branch {branch_id}")
+            logger.info(f"Knowledge extraction complete for branch {branch_id} (batch size: {len(messages)})")
             
     except Exception as e:
         logger.error(f"Knowledge extraction failed: {e}")

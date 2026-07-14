@@ -155,6 +155,18 @@ class StoryService:
         if branch.short_term_directive:
             system_prompt += f"\n\nImmediate Goal: {branch.short_term_directive}"
 
+        user_message_content = ""
+        for msg in reversed(history):
+            if msg.role == "user":
+                user_message_content = msg.content
+                break
+
+        if user_message_content:
+            from app.services.kg_service import kg_service
+            relevant_knowledge = await kg_service.get_relevant_context(db, branch_id, user_message_content)
+            if relevant_knowledge:
+                system_prompt += relevant_knowledge
+
         # 4. Build Structured Messages
         messages = []
         for msg in history:
@@ -180,6 +192,13 @@ class StoryService:
             ))
             
             await self.add_message(db, branch_id, "assistant", full_content.strip())
+            
+            # 7. Batch Extraction Trigger
+            updated_history = await self.get_history(db, branch_id)
+            if len(updated_history) > 0 and len(updated_history) % 5 == 0:
+                from app.services.memory_pipeline import extract_knowledge
+                batch = updated_history[-5:]
+                asyncio.create_task(extract_knowledge(branch_id, batch, llm_service))
 
     async def get_story_tree(self, db: AsyncSession, story_id: str):
         """
